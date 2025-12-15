@@ -51,13 +51,14 @@ select:focus, input:focus {
     border-color: #667eea;
 }
 
-input[type="time"] {
+#userTime {
     width: 200px;
     padding: 12px;
     border: 2px solid #ddd;
     border-radius: 5px;
     font-size: 16px;
     margin-right: 10px;
+    background: white;
 }
 
 button {

@@ -224,6 +224,7 @@ let timeInterval;
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     populateCountrySelect();
+    populateTimeSelect();
     setupEventListeners();
 });
 
@@ -235,6 +236,24 @@ function populateCountrySelect() {
         option.textContent = country;
         select.appendChild(option);
     });
+}
+
+function populateTimeSelect() {
+    const select = document.getElementById('userTime');
+    for (let hour = 1; hour <= 12; hour++) {
+        const amOption = document.createElement('option');
+        const pmOption = document.createElement('option');
+        
+        const hourStr = hour.toString().padStart(2, '0');
+        amOption.value = hour === 12 ? '00:00' : `${hourStr}:00`;
+        amOption.textContent = `${hour}:00 AM`;
+        
+        pmOption.value = hour === 12 ? '12:00' : `${hour + 12}:00`;
+        pmOption.textContent = `${hour}:00 PM`;
+        
+        select.appendChild(amOption);
+        select.appendChild(pmOption);
+    }
 }
 
 function setupEventListeners() {
@@ -348,18 +367,65 @@ function displayAllCitiesWithUserTime(country, userTime) {
     const citiesList = document.getElementById('citiesList');
     citiesList.innerHTML = '';
     
-    const formattedTime = convertTo12Hour(userTime);
+    const matchingCities = [];
     
     Object.keys(countryData[country]).forEach(state => {
+        const stateTimezone = countryData[country][state].timezone;
+        
         countryData[country][state].cities.forEach(city => {
-            const cityRow = document.createElement('tr');
-            cityRow.innerHTML = `
-                <td>${city}</td>
-                <td class="city-time">${formattedTime}</td>
-            `;
-            citiesList.appendChild(cityRow);
+            if (doesCityMatchTime(userTime, stateTimezone)) {
+                matchingCities.push({ city, timezone: stateTimezone });
+                
+                const cityRow = document.createElement('tr');
+                cityRow.innerHTML = `
+                    <td>${city}</td>
+                    <td class="city-time" id="time-${city.replace(/[\s']+/g, '-')}"></td>
+                `;
+                citiesList.appendChild(cityRow);
+            }
         });
     });
+    
+    if (matchingCities.length > 0) {
+        startRealTimeUpdates(matchingCities);
+    }
+}
+
+function startRealTimeUpdates(cities) {
+    clearInterval(timeInterval);
+    
+    function updateTimes() {
+        cities.forEach(({ city, timezone }) => {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                timeZone: timezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            
+            const timeElement = document.getElementById(`time-${city.replace(/[\s']+/g, '-')}`);
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        });
+    }
+    
+    updateTimes();
+    timeInterval = setInterval(updateTimes, 1000);
+}
+
+function doesCityMatchTime(userTime, cityTimezone) {
+    const now = new Date();
+    const cityCurrentTime = new Date(now.toLocaleString('en-US', { timeZone: cityTimezone }));
+    
+    const [userHours] = userTime.split(':');
+    const userHour24 = parseInt(userHours);
+    
+    const cityHour = cityCurrentTime.getHours();
+    
+    return cityHour === userHour24;
 }
 
 function convertTo12Hour(time24) {
@@ -369,3 +435,4 @@ function convertTo12Hour(time24) {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${ampm}`;
 }
+
