@@ -391,6 +391,12 @@ function displayAllCitiesWithUserTime(country, userTime) {
     
     if (matchingCities.length > 0) {
         startRealTimeUpdates(matchingCities);
+    } else {
+        const noMatchRow = document.createElement('tr');
+        noMatchRow.innerHTML = `
+            <td colspan="2" style="text-align: center; color: #666; font-style: italic;">No cities match the selected time currently</td>
+        `;
+        citiesList.appendChild(noMatchRow);
     }
 }
 
